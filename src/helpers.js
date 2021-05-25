@@ -37,20 +37,21 @@ function exec(trigger, body, io, description) {
 }
 
 function parseLabels(param){
-  if (typeof(param) === "string"){
-    const obj = {};
-    param.split("\n").forEach(label => {
-      let [key, ...value] = label.trim().split("=");
-      if (!key || !value) {
-        throw "Bad Labels Format";
-      }
-      if (Array.isArray(value)){
-        value = value.join("=");
-      }
-      obj[key] = value;
-    });
+  const obj = {};
+  if (typeof(param) !== "string"){
+    throw "Bad Labels Type";
   }
-  return {};
+  param.split("\n").forEach(label => {
+    let [key, ...value] = label.trim().split("=");
+    if (!key || !value) {
+      throw "Bad Labels Format";
+    }
+    if (Array.isArray(value)){
+      value = value.join("=");
+    }
+    obj[key] = value;
+  });
+  return obj;
 }
 
 module.exports = { 
