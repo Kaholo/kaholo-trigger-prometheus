@@ -1,0 +1,52 @@
+{
+  "name": "Prometheus-Trigger",
+  "type": "trigger",
+  "execProgram": "node",
+  "main": "app.js",
+  "imgUrl": "logo.png",
+  "version": "1.1.2",
+  "description": "Handles Prometheus webhooks",
+  "methods": [
+    {
+      "name": "alertWebhook",
+      "route": "post /webhook/prometheus",
+      "viewName": "Alert",
+      "params": [
+        {
+          "name": "alertNamePat",
+          "viewName": "Alert Name",
+          "type": "string"
+        },
+        {
+          "name": "groupKeyPat",
+          "viewName": "Group Key",
+          "type": "string"
+        },
+        {
+          "name": "status",
+          "viewName": "Status",
+          "type": "options",
+          "options": [
+            {
+              "id": "Both",
+              "name": "Both"
+            },
+            {
+              "id": "resolved",
+              "name": "resolved"
+            },
+            {
+              "id": "firing",
+              "name": "firing"
+            }
+          ]
+        },
+        {
+          "name": "labels",
+          "viewName": "Labels",
+          "type": "text"
+        }
+      ]
+    }
+  ]
+}
