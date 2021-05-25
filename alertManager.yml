@@ -1,0 +1,7 @@
+route:
+  receiver: 'Kaholo'
+  group_by: [cluster, alertname]
+receivers:
+  - name: 'Kaholo'
+    webhook_configs:
+    - url: https://5db65e5607cd.ngrok.io/webhook/prometheus
