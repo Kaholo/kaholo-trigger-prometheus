@@ -1,52 +1,39 @@
-const { findTriggers, parseLabels } = require(`./helpers`);
+const { parseLabels } = require(`./helpers`);
 const minimatch = require("minimatch");
 
-async function alertWebhook(req, res) {
+async function alertWebhook(req, res, settings, triggerControllers) {
+  if (!triggerControllers) {
+      return res.status(400).send("triggers cannot be nil");
+  }
   const body = req.body;
   const groupKey = body.groupKey;
   if (!groupKey){
-    res.send(`Bad prometheus webhook format`);
+    res.status(400).send(`Bad prometheus webhook format`);
     console.error("Bad prometheus webhook format");
     return;
   }
-  for (let i = 0; i < body.alerts.length; i++){
-    const alert = body.alerts[i];
-    const {status, labels} = alert;
-    const alertName = labels.alertname || "";
-    findTriggers(
-      validateTrigger,
-      [alertName, groupKey, status, labels],
-      alert,
-      req.io, res,
-      "alertWebhook",
-      `alert ${alertName}`
-    );
+  try {
+    // filter out controllers without matching group key
+    triggerControllers = triggerControllers.filter(trigger => !trigger.params.groupKeyPat || 
+                                                              minimatch(groupKey, trigger.params.groupKeyPat));
+    for (let i = 0; i < body.alerts.length; i++){
+      const alert = body.alerts[i];
+      const alertStatus = alert.status, alertLabels = alert.labels;
+      const alertName = alertLabels.alertname || "";
+      triggerControllers.forEach((trigger) => {
+        const {alertNamePat, status} = trigger.params;
+        const labels = parseLabels(trigger.params.labels);
+        if (status && alertStatus !== status) return;
+        if (alertNamePat && !minimatch(alertName, alertNamePat)) return;
+        if (labels && !Object.entries(labels).every(([key, val]) =>   alertLabels.hasOwnProperty(key) &&
+                                                                      alertLabels[key] == val)) return;
+        trigger.execute(alertName, alert);
+      });
+    }
+    res.status(200).send("OK");
   }
-}
-
-function validateTrigger(trigger, [alertName, groupKey, status, labels]) {
-  const alertNamePat = (trigger.params.find((o) => o.name === `alertNamePat`).value || "").trim();
-  const groupKeyPat = (trigger.params.find((o) => o.name === `groupKeyPat`).value || "").trim();
-  const trigStatus = (trigger.params.find((o) => o.name === `status`).value || "Both");
-  const trigLabels = parseLabels(trigger.params.find((o) => o.name === `labels`).value);
-
-  // Check if the group key pattern was provided, and if so check it matches request
-  if (groupKeyPat && !minimatch(groupKey, groupKeyPat)) {
-    throw `Not matching group key`;
-  }
-  // Check if the alert name pattern was provided, and if so check it matches request
-  if (alertNamePat && !minimatch(alertName, alertNamePat)) {
-    throw `Not matching alert name`;
-  }
-  // Check if status was provided, and if so check it matches request
-  if (trigStatus !== "Both" && trigStatus != status) {
-    throw `Not matching status`;
-  }
-  // check if all trigger labels included in request params
-  if (trigLabels && !Object.entries(trigLabels).every(([key, val]) => {
-    return labels.hasOwnProperty(key) && labels[key] == val; 
-  })) {
-    throw `Not matching labels`;
+  catch (err){
+    res.status(422).send(err.message);
   }
 }
 
