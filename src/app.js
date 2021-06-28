@@ -2,15 +2,10 @@ const { parseLabels } = require(`./helpers`);
 const minimatch = require("minimatch");
 
 async function alertWebhook(req, res, settings, triggerControllers) {
-  if (!triggerControllers) {
-      return res.status(400).send("triggers cannot be nil");
-  }
   const body = req.body;
   const groupKey = body.groupKey;
   if (!groupKey){
-    res.status(400).send(`Bad prometheus webhook format`);
-    console.error("Bad prometheus webhook format");
-    return;
+    return res.status(400).send(`Bad prometheus webhook format`);
   }
   try {
     // filter out controllers without matching group key
