@@ -13,7 +13,7 @@ async function alertWebhook(req, res, settings, triggerControllers) {
                                                               minimatch(groupKey, trigger.params.groupKeyPat));
     for (let i = 0; i < body.alerts.length; i++){
       const alert = body.alerts[i];
-      const alertStatus = alert.status, alertLabels = alert.labels;
+      const {status: alertStatus, labels: alertLabels} = alert;
       const alertName = alertLabels.alertname || "";
       triggerControllers.forEach((trigger) => {
         const {alertNamePat, status} = trigger.params;
